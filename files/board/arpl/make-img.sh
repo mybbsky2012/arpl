@@ -15,7 +15,7 @@ BOARD_PATH="${CONFIG_DIR}/board/arpl"
 
 echo "Creating image file"
 # Create image zeroed
-dd if="/dev/zero" of="${IMAGE_FILE}" bs=1M count=500 conv=sync 2>/dev/null
+dd if="/dev/zero" of="${IMAGE_FILE}" bs=1M count=1024 conv=sync 2>/dev/null
 # Copy grub stage1 to image
 dd if="${BOARD_PATH}/grub.bin" of="${IMAGE_FILE}" conv=notrunc,sync 2>/dev/null
 # Create partitions on image
@@ -45,8 +45,6 @@ sudo cp "${BINARIES_DIR}/rootfs.cpio.xz"     "${BINARIES_DIR}/p3/initrd-arpl"
 sudo cp -R "${BOARD_PATH}/p1/"*              "${BINARIES_DIR}/p1"
 sudo cp -R "${BOARD_PATH}/p3/"*              "${BINARIES_DIR}/p3"
 sync
-cp "${BINARIES_DIR}/bzImage" ~/bzImage-arpl
-cp "${BINARIES_DIR}/rootfs.cpio.xz" ~/initrd-arpl
 
 echo "Unmount image file"
 sudo umount "${BINARIES_DIR}/p1"

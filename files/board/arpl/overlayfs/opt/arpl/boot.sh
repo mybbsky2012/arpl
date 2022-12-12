@@ -7,15 +7,19 @@ set -e
 # Sanity check
 loaderIsConfigured || die "Loader is not configured!"
 
-# Print text centralized, if variable ${COLUMNS} is defined
+# Print text centralized
 clear
+[ -z "${COLUMNS}" ] && COLUMNS=50
 TITLE="Welcome to Automated Redpill Loader v${ARPL_VERSION}"
-printf "\033[1;44m%*s\n" $COLUMNS ""
-printf "\033[1;44m%*s\033[A\n" $COLUMNS ""
-printf "\033[1;32m%*s\033[0m\n" $(((${#TITLE}+$COLUMNS)/2)) "${TITLE}"
-printf "\033[1;44m%*s\033[0m\n" $COLUMNS ""
+printf "\033[1;44m%*s\n" ${COLUMNS} ""
+printf "\033[1;44m%*s\033[A\n" ${COLUMNS} ""
+printf "\033[1;32m%*s\033[0m\n" $(((${#TITLE}+${COLUMNS})/2)) "${TITLE}"
+printf "\033[1;44m%*s\033[0m\n" ${COLUMNS} ""
 TITLE="BOOTING..."
 printf "\033[1;33m%*s\033[0m\n" $(((${#TITLE}+${COLUMNS})/2)) "${TITLE}"
+
+history -w
+sync
 
 # Check if DSM zImage changed, patch it if necessary
 ZIMAGE_HASH="`readConfigKey "zimage-hash" "${USER_CONFIG_FILE}"`"
@@ -88,7 +92,7 @@ fi
 # Validate netif_num
 NETIF_NUM=${CMDLINE["netif_num"]}
 MACS=0
-for N in `seq 1 4`; do
+for N in `seq 1 9`; do
   [ -n "${CMDLINE["mac${N}"]}" ] && MACS=$((${MACS}+1))
 done
 if [ ${NETIF_NUM} -ne ${MACS} ]; then
@@ -101,15 +105,18 @@ CMDLINE_LINE=""
 grep -q "force_junior" /proc/cmdline && CMDLINE_LINE+="force_junior "
 [ ${EFI} -eq 1 ] && CMDLINE_LINE+="withefi "
 [ "${BUS}" = "ata" ] && CMDLINE_LINE+="synoboot_satadom=${DOM} dom_szmax=${SIZE} "
+CMDLINE_DIRECT="${CMDLINE_LINE}"
 CMDLINE_LINE+="console=ttyS0,115200n8 earlyprintk log_buf_len=32M earlycon=uart8250,io,0x3f8,115200n8 elevator=elevator root=/dev/md0 loglevel=15"
 for KEY in ${!CMDLINE[@]}; do
   VALUE="${CMDLINE[${KEY}]}"
   CMDLINE_LINE+=" ${KEY}"
+  CMDLINE_DIRECT+=" ${KEY}"
   [ -n "${VALUE}" ] && CMDLINE_LINE+="=${VALUE}"
+  [ -n "${VALUE}" ] && CMDLINE_DIRECT+="=${VALUE}"
 done
 # Escape special chars
 CMDLINE_LINE=`echo ${CMDLINE_LINE} | sed 's/>/\\\\>/g'`
-
+CMDLINE_DIRECT=`echo ${CMDLINE_DIRECT} | sed 's/>/\\\\>/g'`
 echo -e "Cmdline:\n\033[1;36m${CMDLINE_LINE}\033[0m"
 
 # Wait for an IP
@@ -120,7 +127,7 @@ while true; do
   if [ -n "${IP}" ]; then
     echo -e ": \033[1;32m${IP}\033[0m"
     break
-  elif [ ${COUNT} -eq 15 ]; then
+  elif [ ${COUNT} -eq 30 ]; then
     echo -e ": \033[1;31mERROR\033[0m"
     break
   fi
@@ -129,16 +136,23 @@ while true; do
   echo -n "."
 done
 
+DIRECT="`readConfigKey "directboot" "${USER_CONFIG_FILE}"`"
+if [ "${DIRECT}" = "true" ]; then
+  grub-editenv ${GRUB_PATH}/grubenv set dsm_cmdline="${CMDLINE_DIRECT}"
+  echo -e "\033[1;33mReboot to boot directly in DSM\033[0m"
+  grub-editenv ${GRUB_PATH}/grubenv set next_entry="direct"
+  reboot
+  sleep 100
+  exit
+fi
 echo -e "\033[1;37mLoading DSM kernel...\033[0m"
 
 # Executes DSM kernel via KEXEC
-history -w
-sync
 if [ "${EFI_BUG}" = "yes" -a ${EFI} -eq 1 ]; then
   echo -e "\033[1;33mWarning, running kexec with --noefi param, strange things will happen!!\033[0m"
-  kexec --noefi -l "${MOD_ZIMAGE_FILE}" --initrd "${MOD_RDGZ_FILE}" --command-line="${CMDLINE_LINE}" >"${LOG_FILE}" 2>&1 || dieLog
+  kexec --args-linux --noefi -l "${MOD_ZIMAGE_FILE}" --initrd "${MOD_RDGZ_FILE}" --command-line="${CMDLINE_LINE}" >"${LOG_FILE}" 2>&1 || dieLog
 else
-  kexec -l "${MOD_ZIMAGE_FILE}" --initrd "${MOD_RDGZ_FILE}" --command-line="${CMDLINE_LINE}" >"${LOG_FILE}" 2>&1 || dieLog
+  kexec --args-linux -l "${MOD_ZIMAGE_FILE}" --initrd "${MOD_RDGZ_FILE}" --command-line="${CMDLINE_LINE}" >"${LOG_FILE}" 2>&1 || dieLog
 fi
 /sbin/swapoff -a >/dev/null 2>&1 || true
 /bin/umount -a -r >/dev/null 2>&1 || true

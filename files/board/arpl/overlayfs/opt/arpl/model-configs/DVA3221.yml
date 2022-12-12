@@ -4,11 +4,10 @@ synoinfo: &synoinfo
   support_memory_compatibility: "no"
   esataportcfg: "0x00"
   support_bde_internal_10g: "no"
+  support_led_brightness_adjustment: "no"
   rss_server: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_ssl: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_v2: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.json"
-  small_info_path: "https://example.com/null"
-  security_version_server: "https://example.com/smallupdate"
 cmdline: &cmdline
   syno_hdd_powerup_seq: 0
   HddHotplug: 0
@@ -48,6 +47,7 @@ builds:
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-common-post-init-script.patch"
       - "ramdisk-common-disable-disabled-ports.patch"
 
@@ -69,10 +69,11 @@ builds:
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-42661-post-init-script.patch"
       - "ramdisk-42661-disable-disabled-ports.patch"
 
-  42951:
+  42962:
     ver: "7.1.1"
     kver: "4.4.180"
     rd-compressed: false
@@ -82,13 +83,14 @@ builds:
     synoinfo:
       <<: *synoinfo
     pat:
-      url: "https://global.download.synology.com/download/DSM/release/7.1.1/42951/DSM_DVA3221_42951.pat"
-      hash: "c16020a308e71eab73a5acfce5290d13e1a1a0960fa7887acad3f9b4a71e56eb"
-      ramdisk-hash: "491f8863b8a1ee36837dcb7e145f793ca840793d3da2c1e67ce8c5f4df096e80"
-      zimage-hash: "fb4f70d6f67f77b99973113208590363efcdc6c5856c3a5efb85abd75d750260"
-      md5-hash: "59c68430cb9cd20322cb287334a4017b"
+      url: "https://global.download.synology.com/download/DSM/release/7.1.1/42962/DSM_DVA3221_42962.pat"
+      hash: "d83044ff12c9ed81c5e7f5ba4b23b68d96c9a40c29a6a9e5c53ad807d1e27ed2"
+      ramdisk-hash: "7ecb774bfccde028d456613c7232b1d770526ea37e928bf90badac267bafcd78"
+      zimage-hash: "3c67cefc969ee3de51b7978b8d86cd53cbb0e49ec43b2240bf9b8aad3f2e2200"
+      md5-hash: "cff2b34f0d9547781da3cf66e161dc3f"
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-42951-post-init-script.patch"
       - "ramdisk-42661-disable-disabled-ports.patch"

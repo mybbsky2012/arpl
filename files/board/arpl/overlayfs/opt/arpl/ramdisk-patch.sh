@@ -3,8 +3,10 @@
 . /opt/arpl/include/functions.sh
 . /opt/arpl/include/addons.sh
 
+set -o pipefail # Get exit code from process piped
+
 # Sanity check
-[ -f "${ORI_RDGZ_FILE}" ] || die "${ORI_RDGZ_FILE} not found!"
+[ -f "${ORI_RDGZ_FILE}" ] || (die "${ORI_RDGZ_FILE} not found!" | tee -a "${LOG_FILE}")
 
 echo -n "Patching Ramdisk"
 
@@ -23,6 +25,7 @@ mkdir -p "${RAMDISK_PATH}"
 MODEL="`readConfigKey "model" "${USER_CONFIG_FILE}"`"
 BUILD="`readConfigKey "build" "${USER_CONFIG_FILE}"`"
 LKM="`readConfigKey "lkm" "${USER_CONFIG_FILE}"`"
+SN="`readConfigKey "sn" "${USER_CONFIG_FILE}"`"
 
 if [ ${BUILD} -ne ${buildnumber} ]; then
   echo -e "\033[A\n\033[1;32mBuild number changed from \033[1;31m${BUILD}\033[1;32m to \033[1;31m${buildnumber}\033[0m"
@@ -39,18 +42,24 @@ KVER="`readModelKey "${MODEL}" "builds.${BUILD}.kver"`"
 RD_COMPRESSED="`readModelKey "${MODEL}" "builds.${BUILD}.rd-compressed"`"
 
 # Sanity check
-[ -z "${PLATFORM}" -o -z "${KVER}" ] && die "ERROR: Configuration for model ${MODEL} and buildnumber ${BUILD} not found."
+[ -z "${PLATFORM}" -o -z "${KVER}" ] && (die "ERROR: Configuration for model ${MODEL} and buildnumber ${BUILD} not found." | tee -a "${LOG_FILE}")
 
 declare -A SYNOINFO
 declare -A ADDONS
+declare -A USERMODULES
 
 # Read synoinfo and addons from config
 while IFS="=" read KEY VALUE; do
-  [ -n "${KEY}" ] &&  SYNOINFO["${KEY}"]="${VALUE}"
+  [ -n "${KEY}" ] && SYNOINFO["${KEY}"]="${VALUE}"
 done < <(readConfigMap "synoinfo" "${USER_CONFIG_FILE}")
 while IFS="=" read KEY VALUE; do
   [ -n "${KEY}" ] && ADDONS["${KEY}"]="${VALUE}"
 done < <(readConfigMap "addons" "${USER_CONFIG_FILE}")
+
+# Read modules from user config
+while IFS="=" read KEY VALUE; do
+  [ -n "${KEY}" ] && USERMODULES["${KEY}"]="${VALUE}"
+done < <(readConfigMap "modules" "${USER_CONFIG_FILE}")
 
 # Patches
 while read f; do
@@ -62,8 +71,10 @@ done < <(readModelArray "${MODEL}" "builds.${BUILD}.patch")
 # Patch /etc/synoinfo.conf
 echo -n "."
 for KEY in ${!SYNOINFO[@]}; do
-  sed -i "s|^${KEY}=.*|${KEY}=\"${SYNOINFO[${KEY}]}\"|" "${RAMDISK_PATH}/etc/synoinfo.conf" >"${LOG_FILE}" 2>&1 || dieLog
+  _set_conf_kv "${KEY}" "${SYNOINFO[${KEY}]}" "${RAMDISK_PATH}/etc/synoinfo.conf" >"${LOG_FILE}" 2>&1 || dieLog
 done
+# Add serial number to synoinfo.conf, to help to recovery a installed DSM
+_set_conf_kv "SN" "${SN}" "${RAMDISK_PATH}/etc/synoinfo.conf" >"${LOG_FILE}" 2>&1 || dieLog
 
 # Patch /sbin/init.post
 echo -n "."
@@ -72,9 +83,11 @@ sed -e "/@@@CONFIG-MANIPULATORS-TOOLS@@@/ {" -e "r ${TMP_PATH}/rp.txt" -e 'd' -e
 rm "${TMP_PATH}/rp.txt"
 touch "${TMP_PATH}/rp.txt"
 for KEY in ${!SYNOINFO[@]}; do
-  echo "_set_conf_kv '${KEY}' '${SYNOINFO[${KEY}]}' '/tmpRoot/etc/synoinfo.conf'" >> "${TMP_PATH}/rp.txt"
+  echo "_set_conf_kv '${KEY}' '${SYNOINFO[${KEY}]}' '/tmpRoot/etc/synoinfo.conf'"          >> "${TMP_PATH}/rp.txt"
   echo "_set_conf_kv '${KEY}' '${SYNOINFO[${KEY}]}' '/tmpRoot/etc.defaults/synoinfo.conf'" >> "${TMP_PATH}/rp.txt"
 done
+echo "_set_conf_kv 'SN' '${SN}' '/tmpRoot/etc/synoinfo.conf'"                              >> "${TMP_PATH}/rp.txt"
+echo "_set_conf_kv 'SN' '${SN}' '/tmpRoot/etc.defaults/synoinfo.conf'"                     >> "${TMP_PATH}/rp.txt"
 sed -e "/@@@CONFIG-GENERATED@@@/ {" -e "r ${TMP_PATH}/rp.txt" -e 'd' -e '}' -i "${RAMDISK_PATH}/sbin/init.post"
 rm "${TMP_PATH}/rp.txt"
 
@@ -82,15 +95,17 @@ echo -n "."
 # Extract modules to ramdisk
 rm -rf "${TMP_PATH}/modules"
 mkdir -p "${TMP_PATH}/modules"
-gzip -dc "${CACHE_PATH}/modules/${PLATFORM}-${KVER}.tgz" | tar xf - -C "${TMP_PATH}/modules"
+gzip -dc "${MODULES_PATH}/${PLATFORM}-${KVER}.tgz" | tar xf - -C "${TMP_PATH}/modules"
 for F in `ls "${TMP_PATH}/modules/"*.ko`; do
   M=`basename ${F}`
-  # Skip existent modules
-#  [ -f "${RAMDISK_PATH}/usr/lib/modules/${M}" ] || mv "${F}" "${RAMDISK_PATH}/usr/lib/modules/${M}"
-  cp "${F}" "${RAMDISK_PATH}/usr/lib/modules/${M}"
+  if arrayExistItem "${M:0:-3}" "${!USERMODULES[@]}"; then
+    cp -f "${F}" "${RAMDISK_PATH}/usr/lib/modules/${M}"
+  else
+    rm -f "${RAMDISK_PATH}/usr/lib/modules/${M}"
+  fi
 done
 mkdir -p "${RAMDISK_PATH}/usr/lib/firmware"
-gzip -dc "${CACHE_PATH}/modules/firmware.tgz" | tar xf - -C "${RAMDISK_PATH}/usr/lib/firmware"
+gzip -dc "${MODULES_PATH}/firmware.tgz" | tar xf - -C "${RAMDISK_PATH}/usr/lib/firmware"
 # Clean
 rm -rf "${TMP_PATH}/modules"
 
@@ -109,7 +124,9 @@ echo -n "."
 mkdir -p "${RAMDISK_PATH}/addons"
 echo "#!/bin/sh" > "${RAMDISK_PATH}/addons/addons.sh"
 echo 'echo "addons.sh called with params ${@}"' >> "${RAMDISK_PATH}/addons/addons.sh"
-# Required eudev and dtbpatch/maxdisks
+chmod +x "${RAMDISK_PATH}/addons/addons.sh"
+
+# Required addons: eudev, dtbpatch/maxdisks, powersched
 installAddon eudev
 echo "/addons/eudev.sh \${1} " >> "${RAMDISK_PATH}/addons/addons.sh" 2>"${LOG_FILE}" || dieLog
 if [ "${DT}" = "true" ]; then
@@ -119,16 +136,17 @@ else
   installAddon maxdisks
   echo "/addons/maxdisks.sh \${1} ${MAXDISKS}" >> "${RAMDISK_PATH}/addons/addons.sh" 2>"${LOG_FILE}" || dieLog
 fi
+installAddon powersched
+echo "/addons/powersched.sh \${1} " >> "${RAMDISK_PATH}/addons/addons.sh" 2>"${LOG_FILE}" || dieLog
 # User addons
 for ADDON in ${!ADDONS[@]}; do
   PARAMS=${ADDONS[${ADDON}]}
   if ! installAddon ${ADDON}; then
-    echo "ADDON ${ADDON} not found!" | tee "${LOG_FILE}"
+    echo "ADDON ${ADDON} not found!" | tee -a "${LOG_FILE}"
     exit 1
   fi
   echo "/addons/${ADDON}.sh \${1} ${PARAMS}" >> "${RAMDISK_PATH}/addons/addons.sh" 2>"${LOG_FILE}" || dieLog
 done
-chmod +x "${RAMDISK_PATH}/addons/addons.sh"
 
 # Build modules dependencies
 /opt/arpl/depmod -a -b ${RAMDISK_PATH} 2>/dev/null

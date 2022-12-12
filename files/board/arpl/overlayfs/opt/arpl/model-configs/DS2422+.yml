@@ -4,11 +4,10 @@ synoinfo: &synoinfo
   support_memory_compatibility: "no"
   supportraidgroup: "no"
   supportssdcache: "no"
+  support_led_brightness_adjustment: "no"
   rss_server: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_ssl: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_v2: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.json"
-  small_info_path: "https://example.com/null"
-  security_version_server: "https://example.com/smallupdate"
 cmdline: &cmdline
   SMBusHddDynamicPower: 1
   vender_format_version: 2
@@ -47,6 +46,7 @@ builds:
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-common-post-init-script.patch"
   42661:
     ver: "7.1.0"
@@ -66,9 +66,10 @@ builds:
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-42661-post-init-script.patch"
 
-  42951:
+  42962:
     ver: "7.1.1"
     kver: "4.4.180"
     rd-compressed: false
@@ -78,12 +79,13 @@ builds:
     synoinfo:
       <<: *synoinfo
     pat:
-      url: "https://global.download.synology.com/download/DSM/release/7.1.1/42951/DSM_DS2422%2B_42951.pat"
-      hash: "ff2e444040f8105079260396649466d791fc8c6613c52ed78d993a784547476d"
-      ramdisk-hash: "a3a7571bf0220dfe53f750a554c1b570ce4a66792b0dc1c9f2d093f5d7d212b5"
-      zimage-hash: "d28951da0eb41286fbe37ffdfc880271787573d68226e5d26321819cf2d2e6e2"
-      md5-hash: "40da0cb929793e3d165f5958d4a5533b"
+      url: "https://global.download.synology.com/download/DSM/release/7.1.1/42962/DSM_DS2422%2B_42962.pat"
+      hash: "a887cc3f06e2b51d34f682a1a812637486aeefbef57c309414f69c3e5514edef"
+      ramdisk-hash: "edcf0e07e2773326d7f6c2f17a0c2d18e8ef4600a720bbdd4965fc1f11eb21e9"
+      zimage-hash: "b0f296aad0cc3b8adba13483f89770d0a4daf9b9cab335910717448b1eaa8254"
+      md5-hash: "97e2f7a56f011d8a7414867ac07d37cb"
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-42951-post-init-script.patch"

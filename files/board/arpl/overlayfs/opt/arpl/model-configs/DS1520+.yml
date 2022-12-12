@@ -2,11 +2,10 @@ id: "DS1520+"
 synoinfo: &synoinfo
   support_disk_compatibility: "no"
   support_memory_compatibility: "no"
+  support_led_brightness_adjustment: "no"
   rss_server: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_ssl: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_v2: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.json"
-  small_info_path: "https://example.com/null"
-  security_version_server: "https://example.com/smallupdate"
 cmdline: &cmdline
   intel_iommu: igfx_off
   HddEnableDynamicPower: 1
@@ -44,6 +43,7 @@ builds:
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-common-post-init-script.patch"
 
   42661:
@@ -64,9 +64,10 @@ builds:
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-42661-post-init-script.patch"
 
-  42951:
+  42962:
     ver: "7.1.1"
     kver: "4.4.180"
     rd-compressed: false
@@ -76,12 +77,13 @@ builds:
     synoinfo:
       <<: *synoinfo
     pat:
-      url: "https://global.download.synology.com/download/DSM/release/7.1.1/42951/DSM_DS1520%2B_42951.pat"
-      hash: "32063eb34a0e29402c7774d60bb3b7247f894c60e676a437de00cd21b9b68cdb"
-      ramdisk-hash: "1afd618cd6799087320343a48a3992594730e2e807110f2770a4cf3f708f8ccd"
-      zimage-hash: "bbfa903358576e5545c3c3c021c292637360f0925de5e59cb3e785f92db71fd3"
-      md5-hash: "5fd40dc13c83ff14bc10fd43a7d19606"
+      url: "https://global.download.synology.com/download/DSM/release/7.1.1/42962/DSM_DS1520%2B_42962.pat"
+      hash: "f19d2ac39fae564797c148929b8fe7c9740ac3a74099bf573b68df8fe0228cb3"
+      ramdisk-hash: "aad75938d165ef5efdbfc4c570c4cd1cc252344d0756dd3d89a44f581aa6be6f"
+      zimage-hash: "89ee173272101e6714728e73930d8b31a414f9f1eca8ab78f45c12fc721138ab"
+      md5-hash: "b7b4a7c7f9160023e1129e4097403828"
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
+      - "ramdisk-common-etc-rc.patch"
       - "ramdisk-42951-post-init-script.patch"
