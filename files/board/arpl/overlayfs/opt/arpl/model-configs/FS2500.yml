@@ -6,6 +6,8 @@ synoinfo: &synoinfo
   rss_server: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_ssl: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_v2: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.json"
+  support_syno_hybrid_raid:
+  supportraidgroup:
 cmdline: &cmdline
   intel_iommu: igfx_off
   SMBusHddDynamicPower: 1
@@ -13,6 +15,7 @@ cmdline: &cmdline
   synoboot2:
   syno_ttyS0: "serial,0x3f8"
   syno_ttyS1: "serial,0x2f8"
+  elevator: elevator
 platform: "v1000"
 unique: "synology_v1000_fs2500"
 beta: true
@@ -29,17 +32,16 @@ builds:
     ver: "7.0.1"
     kver: "4.4.180"
     rd-compressed: false
-    efi-bug: no
     cmdline:
       <<: *cmdline
     synoinfo:
       <<: *synoinfo
     pat:
       url: "https://global.download.synology.com/download/DSM/release/7.0.1/42218/DSM_FS2500_42218.pat"
-      hash: "4d060be8afec548fdb042bc8095524f10ff200033cab74df37ae07f3de5eaa69"
-      ramdisk-hash: "cbe9099c57f23ba53415574b011580218fa55a0bdb83c4e4bba9e27100e5379d"
-      zimage-hash: "f6816165a52b1f53ce44a45878fe06641da34e9478947f826a236c1a6548f8fd"
-      md5-hash: "70550293c612c1fd9a8d1b7485173877"
+      hash: "3fbd5defbc0fef0d152494033f3e817c330525b70e356a9e9acd2b72d9806b59"
+      ramdisk-hash: "8d66ddfa947b38c0e407d4c5efd7558b1a9392e04fd83fe9f162e1aa546f8da8"
+      zimage-hash: "e083a8aec10537582ed0dd6d79bc358d9aff828b3e256996ef1e4f4bf418dd5d"
+      md5-hash: "9562d49a07f5481208b672ff777f3cbf"
     patch:
       - "ramdisk-common-disable-root-pwd.patch"
       - "ramdisk-common-init-script.patch"
@@ -50,7 +52,6 @@ builds:
     ver: "7.1"
     kver: "4.4.180"
     rd-compressed: false
-    efi-bug: no
     cmdline:
       <<: *cmdline
     synoinfo:
@@ -71,7 +72,6 @@ builds:
     ver: "7.1.1"
     kver: "4.4.180"
     rd-compressed: false
-    efi-bug: no
     cmdline:
       <<: *cmdline
     synoinfo:

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 CACHE_DIR="cache"
-PLATFORM_FILE="../../PLATFORMS"
+PLATFORM_FILE="PLATFORMS"
 
 ###############################################################################
 function trap_cancel() {
@@ -24,6 +24,14 @@ function prepare() {
   URLS["v1000"]="https://global.download.synology.com/download/ToolChain/toolchain/${TOOLCHAIN_VER}/Intel%20x86%20Linux%204.4.180%20%28V1000%29/v1000-${GCCLIB_VER}_x86_64-GPL.txz"
   URLS["r1000"]="https://global.download.synology.com/download/ToolChain/toolchain/${TOOLCHAIN_VER}/AMD%20x86%20Linux%204.4.180%20%28r1000%29/r1000-${GCCLIB_VER}_x86_64-GPL.txz"
   URLS["epyc7002"]="https://global.download.synology.com/download/ToolChain/toolchain/${TOOLCHAIN_VER}/AMD%20x86%20Linux%20Linux%205.10.55%20%28epyc7002%29/epyc7002-${GCCLIB_VER}_x86_64-GPL.txz"
+  #
+  URLS["apollolake-4.4.180"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/apollolake/linux-4.4.x.txz"
+  URLS["broadwell-4.4.180"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/broadwell/linux-4.4.x.txz"
+  URLS["broadwellnk-4.4.180"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/broadwellnk/linux-4.4.x.txz"
+  URLS["bromolow-3.10.108"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/bromolow/linux-3.10.x.txz"
+  URLS["denverton-4.4.180"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/denverton/linux-4.4.x.txz"
+  URLS["geminilake-4.4.180"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/geminilake/linux-4.4.x.txz"
+  URLS["v1000-4.4.180"]="https://global.download.synology.com/download/ToolChain/Synology%20NAS%20GPL%20Source/7.0-41890/v1000/linux-4.4.x.txz"
 
   # Read platforms/kerver version
   echo "Reading platforms"
@@ -40,7 +48,7 @@ function prepare() {
     echo -n "Checking ${CACHE_DIR}/ds.${PLATFORM}-${TOOLKIT_VER}.dev.txz... "
     if [ ! -f "${CACHE_DIR}/ds.${PLATFORM}-${TOOLKIT_VER}.dev.txz" ]; then
       URL="https://global.download.synology.com/download/ToolChain/toolkit/${TOOLKIT_VER}/${PLATFORM}/ds.${PLATFORM}-${TOOLKIT_VER}.dev.txz"
-      echo "Downloading ${URL}"
+      echo -e "No\nDownloading ${URL}"
       curl -L "${URL}" -o "${CACHE_DIR}/ds.${PLATFORM}-${TOOLKIT_VER}.dev.txz"
     else
       echo "OK"
@@ -48,8 +56,20 @@ function prepare() {
     echo -n "Checking ${CACHE_DIR}/${PLATFORM}-toolchain.txz... "
     if [ ! -f "${CACHE_DIR}/${PLATFORM}-toolchain.txz" ]; then
       URL=${URLS["${PLATFORM}"]}
-      echo "Downloading ${URL}"
+      echo -e "No\nDownloading ${URL}"
       curl -L "${URL}" -o "${CACHE_DIR}/${PLATFORM}-toolchain.txz"
+    else
+      echo "OK"
+    fi
+  done
+
+  for KERNEL in 3.10.x 4.4.x 5.10.x; do
+    URL=${URLS["${KERNEL}"]}
+    [ -z "${URL}" ] && continue
+    echo -n "Checking ${CACHE_DIR}/linux-${KERNEL}.txz... "
+    if [ ! -f "${CACHE_DIR}/linux-${KERNEL}.txz" ]; then
+      echo -e "No\nDownloading ${URL}"
+      curl -L "${URL}" -o "${CACHE_DIR}/linux-${KERNEL}.txz"
     else
       echo "OK"
     fi

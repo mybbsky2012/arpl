@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -eo pipefail
 
 ###############################################################################
 function export-vars() {
@@ -18,12 +18,16 @@ function export-vars() {
   export ARCH=x86_64
   export CC="x86_64-pc-linux-gnu-gcc"
   export LD="x86_64-pc-linux-gnu-ld"
-  export PATH="/opt/${1}/bin:${PATH}"
+  echo "export PATH=\"/opt/${1}/bin:${PATH}\"" | \
+    sudo tee /etc/profile.d/path.sh >/dev/null
+  sudo chmod +x /etc/profile.d/path.sh
 }
 
 ###############################################################################
 function shell() {
-  cp /opt/${2}/build/System.map /input
+  cp -fv /opt/${2}/build/.config /opt/${2}/source/
+  cp -fv /opt/${2}/build/System.map /opt/${2}/source/
+  cp -fv /opt/${2}/build/Module.symvers /opt/${2}/source/
   export-vars $2
   shift 2
   bash -l $@
@@ -47,11 +51,15 @@ function compile-module {
     echo "Platform ${1} not found."
     exit 1
   fi
+  unset VALID
   echo -e "Compiling module for \033[7m${PLATFORM}-${KVER}\033[0m..."
   cp -R /input /tmp
   export-vars ${PLATFORM}
-  make -C "/opt/${PLATFORM}/build" M="/tmp/input" \
-       ${PLATFORM^^}-Y=y ${PLATFORM^^}-M=m modules
+  PARMS="${PLATFORM^^}-Y=y ${PLATFORM^^}-M=m"
+  if [ -f "/tmp/input/defines.${1}" ]; then
+    PARMS+=" `cat "/tmp/input/defines.${1}" | xargs`"
+  fi
+  make -j`nproc` -C "/opt/${PLATFORM}/build" M="/tmp/input" ${PARMS} modules
   while read F; do
     strip -g "${F}"
     echo "Copying `basename ${F}`"

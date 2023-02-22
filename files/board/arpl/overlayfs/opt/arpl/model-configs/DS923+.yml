@@ -6,12 +6,15 @@ synoinfo: &synoinfo
   rss_server: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_ssl: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.xml"
   rss_server_v2: "https://raw.githubusercontent.com/fbelavenuto/arpl/main/rss.json"
+  support_syno_hybrid_raid:
+  supportraidgroup:
 cmdline: &cmdline
   SMBusHddDynamicPower: 1
   synoboot2:
   syno_ttyS0: "serial,0x3f8"
   syno_ttyS1: "serial,0x2f8"
   vender_format_version: 2
+  elevator: elevator
 platform: "r1000"
 unique: "synology_r1000_923+"
 beta: true
@@ -19,10 +22,7 @@ dom: 2
 dt: true
 serial:
   prefix:
-    - "2030"
-    - "2040"
-    - "20C0"
-    - "2150"
+    - "2270"
   middle: "TQR"
   suffix: "alpha"
 disks: 4
@@ -31,7 +31,6 @@ builds:
     ver: "7.1.1"
     kver: "4.4.180"
     rd-compressed: false
-    efi-bug: no
     cmdline:
       <<: *cmdline
     synoinfo:
